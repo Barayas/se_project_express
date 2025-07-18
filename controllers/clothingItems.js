@@ -1,5 +1,4 @@
 const ClothingItem = require("../models/clothingItem");
-const mongoose = require("mongoose");
 
 const { BAD_REQUEST, NOT_FOUND, SERVER_ERROR } = require("../utils/errors");
 
@@ -75,7 +74,7 @@ const deleteItem = (req, res) => {
 
   ClothingItem.findByIdAndDelete(itemId)
     .orFail(new Error("Item not found"))
-    .then((item) => res.status(200).send({}))
+    .then(() => res.status(200).send({}))
     .catch((err) => {
       if (err.message === "Item not found") {
         res.status(NOT_FOUND).send({ message: "Item not found" });
