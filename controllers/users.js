@@ -1,5 +1,14 @@
+const bcrypt = require("bcryptjs");
 const User = require("../models/user");
-const { BAD_REQUEST, NOT_FOUND, SERVER_ERROR } = require("../utils/errors");
+
+const {
+  BAD_REQUEST,
+  NOT_FOUND,
+  SERVER_ERROR,
+  INTERNAL_SERVER_ERROR,
+  UNAUTHORIZE,
+  CONFLICT_ERROR,
+} = require("../utils/errors");
 
 // GET /users
 const getUsers = (req, res) => {
@@ -13,9 +22,9 @@ const getUsers = (req, res) => {
 
 // POST /users
 const createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
+  const { name, about, avatar, email, password } = req.body;
 
-  User.create({ name, about, avatar })
+  User.create({ name, about, avatar, email, password })
     .then((user) => res.status(201).send(user))
     .catch((err) => {
       if (err.name === "ValidationError") {
