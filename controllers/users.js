@@ -6,7 +6,6 @@ const { JWT_SECRET } = require("../utils/config");
 const {
   BAD_REQUEST,
   NOT_FOUND,
-  SERVER_ERROR,
   INTERNAL_SERVER_ERROR,
   UNAUTHORIZE,
   CONFLICT_ERROR,
@@ -70,7 +69,7 @@ const login = (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    res
+    return res
       .status(BAD_REQUEST)
       .send({ message: "Email and password are required" });
   }
@@ -90,21 +89,21 @@ const login = (req, res) => {
 
 // GET /users/me
 const getCurrentUser = (req, res) => {
-  const { userId } = req.params;
-
+  const userId = req.user._id;
   User.findById(userId)
-    .then((user) => {
-      if (!user) {
+    .orFail()
+    .then((user) => res.status(200).send(user))
+    .catch((err) => {
+      console.error(err);
+      if (err.name === "DocumentNotFoundError") {
         return res.status(NOT_FOUND).send({ message: "User not found" });
       }
-      return res.status(200).send(user);
-    })
-    .catch((err) => {
       if (err.name === "CastError") {
-        return res.status(BAD_REQUEST).send({ message: "Invalid user ID" });
+        return res.status(BAD_REQUEST).send({ message: "Invalid Id format" });
       }
-      console.log(err);
-      return res.status(SERVER_ERROR).send({ message: err.message });
+      return res
+        .status(INTERNAL_SERVER_ERROR)
+        .send({ message: "An error has occurred on the server" });
     });
 };
 

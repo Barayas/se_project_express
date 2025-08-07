@@ -49,9 +49,13 @@ const updateItem = (req, res) => {
       if (item.owner.toString() !== currentUserId.toString()) {
         return res.status(FORBIDDEN).send({ message: "Access denied" });
       }
-      return ClothingItem.findByIdAndUpdate(itemId, {
-        $set: { imageUrl },
-      }).then((updatedItem) => res.status(200).send({ data: updatedItem }));
+      return ClothingItem.findByIdAndUpdate(
+        itemId,
+        {
+          $set: { imageUrl },
+        },
+        { new: true }
+      ).then((updatedItem) => res.status(200).send({ data: updatedItem }));
     })
     .catch((err) => {
       if (err.name === "CastError") {
