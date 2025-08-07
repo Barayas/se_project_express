@@ -15,7 +15,9 @@ const getItems = (req, res) => {
     })
     .catch((err) => {
       console.log(err);
-      res.status(INTERNAL_SERVER_ERROR).send({ message: err.message });
+      res
+        .status(INTERNAL_SERVER_ERROR)
+        .send({ message: "An error has occurred on the server" });
     });
 };
 
@@ -30,9 +32,11 @@ const createItem = (req, res) => {
     })
     .catch((err) => {
       if (err.name === "ValidationError") {
-        res.status(BAD_REQUEST).send({ message: err.message, err });
+        res.status(BAD_REQUEST).send({ message: "Invalid data provided" });
       } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: err.message, err });
+        res
+          .status(INTERNAL_SERVER_ERROR)
+          .send({ message: "An error has occurred on the server" });
       }
     });
 };
@@ -60,8 +64,12 @@ const updateItem = (req, res) => {
     .catch((err) => {
       if (err.name === "CastError") {
         res.status(BAD_REQUEST).send({ message: "Invalid item ID" });
+      } else if (err.name === "DocumentNotFoundError") {
+        res.status(NOT_FOUND).send({ message: "Item not found" });
       } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: err.message });
+        res
+          .status(INTERNAL_SERVER_ERROR)
+          .send({ message: "An error has occurred on the server" });
       }
     });
 };
@@ -81,7 +89,9 @@ const likeItem = (req, res) =>
       } else if (err.name === "CastError") {
         res.status(BAD_REQUEST).send({ message: "Invalid item ID" });
       } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: err.message });
+        res
+          .status(INTERNAL_SERVER_ERROR)
+          .send({ message: "An error has occurred on the server" });
       }
     });
 
@@ -129,7 +139,9 @@ const unlikeItem = (req, res) => {
       } else if (err.name === "CastError") {
         res.status(BAD_REQUEST).send({ message: "Invalid item ID" });
       } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: err.message });
+        res
+          .status(INTERNAL_SERVER_ERROR)
+          .send({ message: "An error has occurred on the server" });
       }
     });
 };

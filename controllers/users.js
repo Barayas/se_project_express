@@ -21,10 +21,11 @@ const updateProfile = (req, res) => {
     { name, avatar },
     { new: true, runValidators: true }
   )
+    .orFail(new Error("User not found"))
     .then((user) => res.status(200).send(user))
     .catch((err) => {
       console.error(err);
-      if (err.name === "DocumentNotFoundError") {
+      if (err.message === "User not found") {
         return res.status(NOT_FOUND).send({ message: "User not found" });
       }
       if (err.name === "ValidationError") {
