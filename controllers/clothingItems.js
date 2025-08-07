@@ -1,6 +1,11 @@
 const ClothingItem = require("../models/clothingItem");
 
-const { BAD_REQUEST, NOT_FOUND, SERVER_ERROR } = require("../utils/errors");
+const {
+  BAD_REQUEST,
+  NOT_FOUND,
+  INTERNAL_SERVER_ERROR,
+  FORBIDDEN,
+} = require("../utils/errors");
 
 // GET /items
 const getItems = (req, res) => {
@@ -10,7 +15,7 @@ const getItems = (req, res) => {
     })
     .catch((err) => {
       console.log(err);
-      res.status(SERVER_ERROR).send({ message: err.message });
+      res.status(INTERNAL_SERVER_ERROR).send({ message: err.message });
     });
 };
 
@@ -27,7 +32,7 @@ const createItem = (req, res) => {
       if (err.name === "ValidationError") {
         res.status(BAD_REQUEST).send({ message: err.message, err });
       } else {
-        res.status(SERVER_ERROR).send({ message: err.message, err });
+        res.status(INTERNAL_SERVER_ERROR).send({ message: err.message, err });
       }
     });
 };
@@ -36,15 +41,23 @@ const createItem = (req, res) => {
 const updateItem = (req, res) => {
   const { itemId } = req.params;
   const { imageUrl } = req.body;
+  const currentUserId = req.user._id;
 
-  ClothingItem.findByIdAndUpdate(itemId, { $set: { imageUrl } })
+  ClothingItem.findById(itemId)
     .orFail()
-    .then((item) => res.status(200).send({ data: item }))
+    .then((item) => {
+      if (item.owner.toString() !== currentUserId.toString()) {
+        return res.status(FORBIDDEN).send({ message: "Access denied" });
+      }
+      return ClothingItem.findByIdAndUpdate(itemId, {
+        $set: { imageUrl },
+      }).then((updatedItem) => res.status(200).send({ data: updatedItem }));
+    })
     .catch((err) => {
       if (err.name === "CastError") {
         res.status(BAD_REQUEST).send({ message: "Invalid item ID" });
       } else {
-        res.status(SERVER_ERROR).send({ message: err.message });
+        res.status(INTERNAL_SERVER_ERROR).send({ message: err.message });
       }
     });
 };
@@ -64,25 +77,36 @@ const likeItem = (req, res) =>
       } else if (err.name === "CastError") {
         res.status(BAD_REQUEST).send({ message: "Invalid item ID" });
       } else {
-        res.status(SERVER_ERROR).send({ message: err.message });
+        res.status(INTERNAL_SERVER_ERROR).send({ message: err.message });
       }
     });
 
 // DELETE /items/:itemId
 const deleteItem = (req, res) => {
   const { itemId } = req.params;
+  const currentUserId = req.user._id;
 
-  ClothingItem.findByIdAndDelete(itemId)
-    .orFail(new Error("Item not found"))
-    .then(() => res.status(200).send({}))
-    .catch((err) => {
-      if (err.message === "Item not found") {
-        res.status(NOT_FOUND).send({ message: "Item not found" });
-      } else if (err.name === "CastError") {
-        res.status(BAD_REQUEST).send({ message: "Invalid item ID" });
-      } else {
-        res.status(SERVER_ERROR).send({ message: err.message });
+  ClothingItem.findById(itemId)
+    .orFail()
+    .then((item) => {
+      if (item.owner.toString() !== currentUserId.toString()) {
+        return res.status(FORBIDDEN).send({ message: "Access denied" });
       }
+      return item.deleteOne().then(() => {
+        res.status(200).send({ message: "Item deleted successfully" });
+      });
+    })
+    .catch((err) => {
+      console.error(err);
+      if (err.name === "DocumentNotFoundError") {
+        return res.status(NOT_FOUND).send({ message: "Item not found" });
+      }
+      if (err.name === "CastError") {
+        return res.status(BAD_REQUEST).send({ message: "Invalid Id format" });
+      }
+      return res
+        .status(INTERNAL_SERVER_ERROR)
+        .send({ message: "An error has occurred on the server" });
     });
 };
 
@@ -101,7 +125,7 @@ const unlikeItem = (req, res) => {
       } else if (err.name === "CastError") {
         res.status(BAD_REQUEST).send({ message: "Invalid item ID" });
       } else {
-        res.status(SERVER_ERROR).send({ message: err.message });
+        res.status(INTERNAL_SERVER_ERROR).send({ message: err.message });
       }
     });
 };
