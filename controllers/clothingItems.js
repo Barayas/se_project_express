@@ -1,28 +1,27 @@
 const ClothingItem = require("../models/clothingItem");
 
-const {
-  BAD_REQUEST,
-  NOT_FOUND,
-  INTERNAL_SERVER_ERROR,
-  FORBIDDEN,
-} = require("../utils/errors");
+const { BadRequestError } = require("../utils/BadRequestError");
+const { NotFoundError } = require("../utils/NotFoundError");
+const { InternalServerError } = require("../utils/InternalServerError");
+const { ForbiddenError } = require("../utils/ForbiddenError");
 
 // GET /items
-const getItems = (req, res) => {
+const getItems = (req, res, next) => {
   ClothingItem.find({})
     .then((items) => {
       res.status(200).send(items);
     })
     .catch((err) => {
-      console.log(err);
-      res
-        .status(INTERNAL_SERVER_ERROR)
-        .send({ message: "An error has occurred on the server" });
+      if (err.name === "CastError") {
+        next(new BadRequestError("The id string is in an invalid format"));
+      } else {
+        next(new InternalServerError("An error has occurred on the server"));
+      }
     });
 };
 
 // POST /items
-const createItem = (req, res) => {
+const createItem = (req, res, next) => {
   const { name, weather, imageUrl } = req.body;
   const owner = req.user._id;
 
@@ -32,17 +31,17 @@ const createItem = (req, res) => {
     })
     .catch((err) => {
       if (err.name === "ValidationError") {
-        res.status(BAD_REQUEST).send({ message: "Invalid data provided" });
+        next(new BadRequestError("Invalid data provided"));
+      } else if (err.name === "CastError") {
+        next(new BadRequestError("The id string is in an invalid format"));
       } else {
-        res
-          .status(INTERNAL_SERVER_ERROR)
-          .send({ message: "An error has occurred on the server" });
+        next(new InternalServerError("An error has occurred on the server"));
       }
     });
 };
 
 // PUT /items/:itemId
-const updateItem = (req, res) => {
+const updateItem = (req, res, next) => {
   const { itemId } = req.params;
   const { imageUrl } = req.body;
   const currentUserId = req.user._id;
@@ -51,7 +50,7 @@ const updateItem = (req, res) => {
     .orFail()
     .then((item) => {
       if (item.owner.toString() !== currentUserId.toString()) {
-        return res.status(FORBIDDEN).send({ message: "Access denied" });
+        return next(new ForbiddenError("Access denied"));
       }
       return ClothingItem.findByIdAndUpdate(
         itemId,
@@ -63,19 +62,17 @@ const updateItem = (req, res) => {
     })
     .catch((err) => {
       if (err.name === "CastError") {
-        res.status(BAD_REQUEST).send({ message: "Invalid item ID" });
+        next(new BadRequestError("The id string is in an invalid format"));
       } else if (err.name === "DocumentNotFoundError") {
-        res.status(NOT_FOUND).send({ message: "Item not found" });
+        next(new NotFoundError("Item not found"));
       } else {
-        res
-          .status(INTERNAL_SERVER_ERROR)
-          .send({ message: "An error has occurred on the server" });
+        next(new InternalServerError("An error has occurred on the server"));
       }
     });
 };
 
 // PUT /items/:itemId/likes
-const likeItem = (req, res) =>
+const likeItem = (req, res, next) =>
   ClothingItem.findByIdAndUpdate(
     req.params.itemId,
     { $addToSet: { likes: req.user._id } },
@@ -85,18 +82,16 @@ const likeItem = (req, res) =>
     .then((item) => res.status(200).send({ data: item }))
     .catch((err) => {
       if (err.message === "Item not found") {
-        res.status(NOT_FOUND).send({ message: "Item not found" });
+        next(new NotFoundError("Item not found"));
       } else if (err.name === "CastError") {
-        res.status(BAD_REQUEST).send({ message: "Invalid item ID" });
+        next(new BadRequestError("The id string is in an invalid format"));
       } else {
-        res
-          .status(INTERNAL_SERVER_ERROR)
-          .send({ message: "An error has occurred on the server" });
+        next(new InternalServerError("An error has occurred on the server"));
       }
     });
 
 // DELETE /items/:itemId
-const deleteItem = (req, res) => {
+const deleteItem = (req, res, next) => {
   const { itemId } = req.params;
   const currentUserId = req.user._id;
 
@@ -104,28 +99,25 @@ const deleteItem = (req, res) => {
     .orFail()
     .then((item) => {
       if (item.owner.toString() !== currentUserId.toString()) {
-        return res.status(FORBIDDEN).send({ message: "Access denied" });
+        return next(new ForbiddenError("Access denied"));
       }
       return item.deleteOne().then(() => {
         res.status(200).send({ message: "Item deleted successfully" });
       });
     })
     .catch((err) => {
-      console.error(err);
       if (err.name === "DocumentNotFoundError") {
-        return res.status(NOT_FOUND).send({ message: "Item not found" });
+        next(new NotFoundError("Item not found"));
+      } else if (err.name === "CastError") {
+        next(new BadRequestError("The id string is in an invalid format"));
+      } else {
+        next(new InternalServerError("An error has occurred on the server"));
       }
-      if (err.name === "CastError") {
-        return res.status(BAD_REQUEST).send({ message: "Invalid Id format" });
-      }
-      return res
-        .status(INTERNAL_SERVER_ERROR)
-        .send({ message: "An error has occurred on the server" });
     });
 };
 
 // DELETE /items/:itemId/likes
-const unlikeItem = (req, res) => {
+const unlikeItem = (req, res, next) => {
   ClothingItem.findByIdAndUpdate(
     req.params.itemId,
     { $pull: { likes: req.user._id } },
@@ -135,13 +127,11 @@ const unlikeItem = (req, res) => {
     .then((item) => res.status(200).send({ data: item }))
     .catch((err) => {
       if (err.message === "Item not found") {
-        res.status(NOT_FOUND).send({ message: "Item not found" });
+        next(new NotFoundError("Item not found"));
       } else if (err.name === "CastError") {
-        res.status(BAD_REQUEST).send({ message: "Invalid item ID" });
+        next(new BadRequestError("The id string is in an invalid format"));
       } else {
-        res
-          .status(INTERNAL_SERVER_ERROR)
-          .send({ message: "An error has occurred on the server" });
+        next(new InternalServerError("An error has occurred on the server"));
       }
     });
 };
