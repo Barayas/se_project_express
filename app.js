@@ -1,6 +1,8 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+require("dotenv").config();
+
 const { createUser, login } = require("./controllers/users");
 const mainRouter = require("./routes/index");
 const { errors } = require("celebrate");
