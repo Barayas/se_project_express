@@ -6,7 +6,6 @@ const errors = require("celebrate");
 
 const { createUser, login } = require("./controllers/users");
 const mainRouter = require("./routes/index");
-const { errors } = require("celebrate");
 
 const errorHandler = require("./middlewares/errorHandler");
 
