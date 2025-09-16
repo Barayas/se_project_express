@@ -1,11 +1,13 @@
 const router = require("express").Router();
 const clothingItem = require("./clothingItems");
 const userRouter = require("./users");
-const { handleNotFound } = require("../utils/errors");
+const { NotFoundError } = require("../utils/errors");
 
 router.use("/items", clothingItem);
 router.use("/users", userRouter);
 
-router.use(handleNotFound);
+router.use((req, res, next) => {
+  next(new NotFoundError("Endpoint not found"));
+});
 
 module.exports = router;

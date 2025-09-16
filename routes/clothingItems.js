@@ -10,8 +10,10 @@ const {
   unlikeItem,
 } = require("../controllers/clothingItems");
 
+const { validateCreateItem } = require("../middlewares/validation");
+
 // Create
-router.post("/", auth, createItem);
+router.post("/", auth, validateCreateItem, createItem);
 
 // Read
 router.get("/", getItems);
