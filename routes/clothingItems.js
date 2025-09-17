@@ -10,7 +10,10 @@ const {
   unlikeItem,
 } = require("../controllers/clothingItems");
 
-const { validateCreateItem } = require("../middlewares/validation");
+const {
+  validateCreateItem,
+  validateItemIDFormat,
+} = require("../middlewares/validation");
 
 // Create
 router.post("/", auth, validateCreateItem, createItem);
@@ -19,10 +22,10 @@ router.post("/", auth, validateCreateItem, createItem);
 router.get("/", getItems);
 
 // Update
-router.put("/:itemId", auth, updateItem);
-router.put("/:itemId/likes", auth, likeItem);
+router.put("/:itemId", validateItemIDFormat, auth, updateItem);
+router.put("/:itemId/likes", validateItemIDFormat, auth, likeItem);
 
 // Delete
-router.delete("/:itemId", auth, deleteItem);
-router.delete("/:itemId/likes", auth, unlikeItem);
+router.delete("/:itemId", validateItemIDFormat, auth, deleteItem);
+router.delete("/:itemId/likes", validateItemIDFormat, auth, unlikeItem);
 module.exports = router;
